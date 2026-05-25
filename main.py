@@ -29,6 +29,10 @@ SILENT_MODE = False
 # ===============================================
 
 def main():
+    # Basic settings validation
+    if not DISCORD_WEBHOOK: raise ValueError("DISCORD_WEBHOOK is not set")
+    if not API_KEY:         raise ValueError("API_KEY is not set")
+
     # Collect and update data
     user_data: SteamUserData = SteamApi.get_user_owned_apps(API_KEY, USERS)
 
