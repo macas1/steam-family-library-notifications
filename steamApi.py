@@ -125,7 +125,7 @@ class SteamApi:
     def __read_user_csv(user_id: int) -> list[dict]:
         """ Gets recorded data from last time the users apps were observed """
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        file_path = os.path.join(script_dir, "data", f"{user_id}.csv")
+        file_path = os.path.join(script_dir, "user_data", f"{user_id}.csv")
         games_data = []
 
         try:
@@ -181,7 +181,7 @@ class SteamApi:
 
         # Write data
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        file_path = os.path.join(script_dir, "data", f"{user_id}.csv")
+        file_path = os.path.join(script_dir, "user_data", f"{user_id}.csv")
         with open(file_path, "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(
                 f,

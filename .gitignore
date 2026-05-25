@@ -1,4 +1,4 @@
 __pycache__
 
-data/*
-!data/.gitkeep
+user_data/*
+!user_data/.gitkeep

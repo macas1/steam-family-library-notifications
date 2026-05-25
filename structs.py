@@ -4,6 +4,7 @@ from pydantic import BaseModel
 class DiscordWebhook(BaseModel):
     webhook_url: str
     user_ids: list[int]
+
 class SteamUserAppData(BaseModel):
     date_first_seen: str    # The date this application first observed the app in the users owned games
     date_last_seen: str     # The date this application most recently observed the app in the users owned games

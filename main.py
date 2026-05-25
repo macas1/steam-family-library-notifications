@@ -1,6 +1,7 @@
 from steamApi import SteamApi, SteamUserData
 from WebhookPublisher import WebhookPublisher
 from structs import DiscordWebhook
+from pathlib import Path
 import os
 
 # ===============================================
@@ -20,11 +21,10 @@ DISCORD_WEBHOOKS = [
 ]
 
 # If true will not notify users, will only update csv
-# Make sure to have this True when first getting data for users and no csv history exists, or the users will be notified about buying every game they own
 SILENT_MODE = False 
 
 # ===============================================
-# MAIN
+# Methods
 # ===============================================
 
 def main():
@@ -33,19 +33,27 @@ def main():
     if not API_KEY:          raise ValueError("API_KEY is not set")
 
     for index, hook in enumerate(DISCORD_WEBHOOKS):
+        # Check if all of the user's apps have been previously recorded
+        user_csvs_exists = all_filenames_exist("user_data", hook.user_ids)
+        
         # Collect and update data
         user_data: SteamUserData = SteamApi.get_user_owned_apps(API_KEY, hook.user_ids)
 
-        # Optionally ship publishing
+        # Optionally skip publishing
         if SILENT_MODE:
             continue
-        
-        # Make sure the webhook url is not empty
-        if not hook.webhook_url: 
-            print(f"Warning: Skipping DISCORD_WEBHOOKS[{index}] because it has an empty webhook_url.")
+
+        # Skip publishing if a user doesn't have an existing csv file
+        if not user_csvs_exists:
+            print(f"Info: Silent mode enforced for DISCORD_WEBHOOKS[{index}], as at least one user has no previously recorded data.")
             continue
         
-        # Skip if no changes
+        # Skip publishing if the webhook url is not empty
+        if not hook.webhook_url: 
+            print(f"Warning: Silent mode enforced for DISCORD_WEBHOOKS[{index}], as it has an empty webhook_url.")
+            continue
+        
+        # Skip publishing if no changes
         if not sum(
             len(user.game_data.added_app_ids) + len(user.game_data.removed_app_ids)
             for user in user_data.steam_users
@@ -53,8 +61,13 @@ def main():
             print("Info: No changes!")
             return
         
-        # Create app data
-        WebhookPublisher.publish_update(hook.webhook_url, API_KEY, user_data)    
+        # Generate and publish a message to the discord webhook
+        WebhookPublisher.publish_update(hook.webhook_url, API_KEY, user_data)   
+
+def all_filenames_exist(directory: str, filenames: list[str]) -> bool:
+    existing = {p.stem for p in Path(directory).iterdir() if p.is_file()}
+    incoming = {str(f) for f in filenames}
+    return incoming.issubset(existing)
 
 if __name__ == "__main__":
     main()
