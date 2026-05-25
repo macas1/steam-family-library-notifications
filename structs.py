@@ -19,7 +19,7 @@ class SteamUserApps:
 
 @dataclass
 class SteamUser:
-    steam_id: str
+    steam_id: int
     game_data: SteamUserApps
 
 @dataclass

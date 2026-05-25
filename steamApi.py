@@ -72,7 +72,7 @@ class SteamApi:
         return app_info
     
     @staticmethod
-    def get_app_details_web(app_id: str):
+    def get_app_details_web(app_id: int):
         params = {
             "appids": app_id,
         }
@@ -82,10 +82,10 @@ class SteamApi:
         return data[str(app_id)]["data"]
     
     @staticmethod
-    def get_user_info(api_key: str, user_ids: list[str]) -> list[dict]:
+    def get_user_info(api_key: str, user_ids: list[int]) -> list[dict]:
         params = {
             "key": api_key,
-            "steamids": ",".join(user_ids),
+            "steamids": ",".join(map(str, user_ids)),
         }
         response = requests.get(SteamApi.__API_GET_USERS, params=params, timeout=10)
         response.raise_for_status() # TODO Is this lethal? also check for success false in response?
@@ -98,7 +98,7 @@ class SteamApi:
         return user_info_map
 
     @staticmethod
-    def __get_user_owned_games(api_key: str, user_id: str) -> list[dict]:
+    def __get_user_owned_games(api_key: str, user_id: int) -> list[dict]:
         params = {
             "key": api_key,
             "steamid": user_id,
@@ -122,7 +122,7 @@ class SteamApi:
         return games
 
     @staticmethod
-    def __read_user_csv(user_id: str) -> list[dict]:
+    def __read_user_csv(user_id: int) -> list[dict]:
         """ Gets recorded data from last time the users apps were observed """
         script_dir = os.path.dirname(os.path.abspath(__file__))
         file_path = os.path.join(script_dir, "data", f"{user_id}.csv")
@@ -152,7 +152,7 @@ class SteamApi:
         return games_data
 
     @staticmethod
-    def __write_user_csv(user_id: str, old_csv_data: list[dict], new_ids: set, removed_ids: set) -> list[dict]:
+    def __write_user_csv(user_id: int, old_csv_data: list[dict], new_ids: set, removed_ids: set) -> list[dict]:
         """ Writes user game data to record what has been observed. Returns new observation data. """
         today = date.today().isoformat()
 

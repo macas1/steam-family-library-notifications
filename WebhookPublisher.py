@@ -89,7 +89,7 @@ class WebhookPublisher:
         return output
     
     @staticmethod
-    def __get_icon_url(app_id: str, app_data: SteamAppData) -> str | None:
+    def __get_icon_url(app_id: int, app_data: SteamAppData) -> str | None:
         # Try icon hash
         if app_data.icon_hash:
             return f"http://media.steampowered.com/steamcommunity/public/images/apps/{app_id}/{app_data.icon_hash}.jpg"
@@ -101,10 +101,10 @@ class WebhookPublisher:
     
     
     @staticmethod
-    def __user_id_list_to_names(ids: list[str], user_info: dict) -> list[str]:
+    def __user_id_list_to_names(ids: list[int], user_info: dict) -> list[str]:
         output = []
         for id in ids:
-            output.append(user_info[id]["personaname"])
+            output.append(user_info[str(id)]["personaname"])
         return output
 
     @staticmethod

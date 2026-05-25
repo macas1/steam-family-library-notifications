@@ -7,19 +7,17 @@ import os
 # ===============================================
 
 # Steam Web API key
-API_KEY = os.environ.get("SteamWebApiKey")
-
+API_KEY: str = os.environ.get("SteamWebApiKey")
 # The webhook to be displayed to
-DISCORD_WEBHOOK = ""
-
+DISCORD_WEBHOOK: str = ""
 # User Steam ids to watch, should be the users in your steam family.
-USERS = [ # TODO: Convert these to int throughout the whole app
-    "76561198060418017", # Me
-    "76561198915761429", # Bean
-    "76561198206657967", # Tanner
-    "76561198125949369", # Sasha
-    "76561198323443242", # Xav
-    "76561198197931509"  # Tom
+USERS: list[int] = [
+    76561198060418017, # Me
+    76561198915761429, # Bean
+    76561198206657967, # Tanner
+    76561198125949369, # Sasha
+    76561198323443242, # Xav
+    76561198197931509  # Tom
 ]
 
 # If true will not notify users, will only update csv
