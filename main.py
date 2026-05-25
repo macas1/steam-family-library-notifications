@@ -1,31 +1,7 @@
 from steamApi import SteamApi, SteamUserData
 from WebhookPublisher import WebhookPublisher
-from structs import DiscordWebhook
 from pathlib import Path
-import os
-
-# ===============================================
-# OPTIONS
-# ===============================================
-
-# Steam Web API key
-API_KEY: str = os.environ.get("SteamWebApiKey")
-
-DISCORD_WEBHOOKS = [
-    DiscordWebhook(
-        webhook_url="",
-        user_ids=[
-
-        ]
-    )
-]
-
-# If true will not notify users, will only update csv
-SILENT_MODE = False 
-
-# ===============================================
-# Methods
-# ===============================================
+from config import *
 
 def main():
     # Basic settings validation

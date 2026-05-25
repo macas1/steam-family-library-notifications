@@ -1,10 +1,8 @@
-import requests
+import requests, colorsys
 from structs import AppEmbeddableInfo, SteamUserData, SteamAppData
 from steamApi import SteamApi
 from colorthief import ColorThief
 from io import BytesIO
-import requests
-import colorsys
 
 class WebhookPublisher:    
     __MAX_EMBEDS = 10
