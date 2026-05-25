@@ -1,7 +1,8 @@
-import requests, csv, os
+import csv, os
 from datetime import date
 from structs import SteamUserAppData, SteamAppData, SteamUserApps, SteamUserData, SteamUser
 from steam.client import SteamClient
+from requests import Response, get as get_request
 
 class SteamApi:
     __API_GET_OWNED_GAMES = "https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/"
@@ -11,6 +12,8 @@ class SteamApi:
     __CSV_HEADER_DATE_FIRST_SEEN = "date_first_seen"
     __CSV_HEADER_DATE_LAST_SEEN = "date_last_seen"
     __CSV_HEADER_DATE_LAST_REMOVED = "date_last_removed"
+
+    __requests_cache = {}
 
     @staticmethod
     def get_user_owned_apps(api_key: int, user_ids: list[int]) -> SteamUserData:
@@ -76,7 +79,7 @@ class SteamApi:
         params = {
             "appids": app_id,
         }
-        response = requests.get(SteamApi.__API_GET_APP_DETAILS, params=params, timeout=10)
+        response = SteamApi.__cached_get_json(SteamApi.__API_GET_APP_DETAILS, params=params, timeout=10)
         response.raise_for_status() # TODO Is this lethal? also check for success false in response?
         data = response.json()
         return data[str(app_id)]["data"]
@@ -87,7 +90,7 @@ class SteamApi:
             "key": api_key,
             "steamids": ",".join(map(str, user_ids)),
         }
-        response = requests.get(SteamApi.__API_GET_USERS, params=params, timeout=10)
+        response = SteamApi.__cached_get_json(SteamApi.__API_GET_USERS, params=params, timeout=10)
         response.raise_for_status() # TODO Is this lethal? also check for success false in response?
         data = response.json()
 
@@ -96,6 +99,18 @@ class SteamApi:
         for user in data["response"]["players"]:
             user_info_map[user["steamid"]] = user
         return user_info_map
+    
+    @staticmethod
+    def __cached_get_json(url: str, params: dict | None = None, **kwargs) -> Response:
+        params = params or {}
+        key = (url, frozenset(params.items()))
+
+        if key in SteamApi.__requests_cache:
+            return SteamApi.__requests_cache[key]
+
+        response = get_request(url, params=params, **kwargs)
+        SteamApi.__requests_cache[key] = response
+        return response
 
     @staticmethod
     def __get_user_owned_games(api_key: str, user_id: int) -> list[dict]:
@@ -105,7 +120,7 @@ class SteamApi:
             "include_appinfo": "true",
             "format": "json"
         }
-        response = requests.get(SteamApi.__API_GET_OWNED_GAMES, params=params, timeout=10)
+        response = SteamApi.__cached_get_json(SteamApi.__API_GET_OWNED_GAMES, params=params, timeout=10)
         response.raise_for_status() # TODO Is this lethal? also check for success false in response?
         data = response.json()
         

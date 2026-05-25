@@ -5,5 +5,4 @@ TODO:
             Settings
             APIs
                 Burner account
-    Cache calls for 1 hour?
     Test if private accounts will work if they are friends with the API account
