@@ -4,16 +4,22 @@ from pathlib import Path
 from config import *
 
 def main():
-    # Basic settings validation
+    # Config validation
     if not DISCORD_WEBHOOKS: raise ValueError("DISCORD_WEBHOOKS is not set")
-    if not API_KEY:          raise ValueError("API_KEY is not set")
 
     for index, hook in enumerate(DISCORD_WEBHOOKS):
+        # Config validation and organisation
+        if not hook.steam_web_api_key: 
+            raise ValueError("steam_web_api_key is not set for DISCORD_WEBHOOKS[{index}].")     
+
         # Check if all of the user's apps have been previously recorded
         user_csvs_exists = all_filenames_exist("user_data", hook.user_ids)
         
         # Collect and update data
-        user_data: SteamUserData = SteamApi.get_user_owned_apps(API_KEY, hook.user_ids)
+        user_data: SteamUserData = SteamApi.get_user_owned_apps(
+            [key for key in (hook.steam_web_api_key, hook.steam_web_api_key_2) if key], 
+            hook.user_ids
+        )
 
         # Optionally skip publishing
         if SILENT_MODE:
@@ -38,7 +44,7 @@ def main():
             return
         
         # Generate and publish a message to the discord webhook
-        WebhookPublisher.publish_update(hook.webhook_url, API_KEY, user_data)   
+        WebhookPublisher.publish_update(hook.webhook_url, hook.steam_web_api_key, user_data)   
 
 def all_filenames_exist(directory: str, filenames: list[str]) -> bool:
     existing = {p.stem for p in Path(directory).iterdir() if p.is_file()}

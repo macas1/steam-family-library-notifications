@@ -1,8 +1,9 @@
-import requests, colorsys
+import colorsys
 from structs import AppEmbeddableInfo, SteamUserData, SteamAppData
 from steamApi import SteamApi
 from colorthief import ColorThief
 from io import BytesIO
+from requests import post as request_post
 
 class WebhookPublisher:    
     __MAX_EMBEDS = 10
@@ -18,7 +19,7 @@ class WebhookPublisher:
             payload = { "embeds": chunk_embeds }
             if i == 0: payload["content"] = WebhookPublisher.__generate_content(display_data)
             
-            response = requests.post(webhook_url, json=payload)
+            response = request_post(webhook_url, json=payload)
             if response.status_code in (200, 204):
                 print("Info: Webhook sent successfully.")
             else:
@@ -44,10 +45,10 @@ class WebhookPublisher:
         # Get cli results for apps in bulk
         cli_data_results = SteamApi.get_app_details_cli([app_id for app_id in app_data])
 
-        # If family shared exclusive, ignore
+        # If family shared exclusive, or not public game (expired play-tests) ignore
         for app_id in list(app_data.keys()):
             app_cli_data = cli_data_results[app_id]
-            if int(app_cli_data["common"].get("exfgls", 0)) > 0:
+            if app_cli_data.get("_missing_token") or int(app_cli_data["common"].get("exfgls", 0)) > 0:
                 del app_data[app_id]
         if not app_data:
             return {}
@@ -186,14 +187,14 @@ class WebhookPublisher:
 
         # Try get color from banner
         if data.banner_url:
-            return WebhookPublisher.__generate_color_from_image(data.icon_url)
+            return WebhookPublisher.__generate_color_from_image(data.banner_url)
         
         # Return black as default TODO: do something else?
         return 0
     
     @staticmethod
     def __generate_color_from_image(image_url: str) -> int:
-        response = requests.get(image_url)
+        response = SteamApi.cached_get(image_url) # TODO: Should this be a normal get?
         response.raise_for_status() # TODO: Make non lethal, this app must stay alive
 
         # Create ColorThief object from bytes

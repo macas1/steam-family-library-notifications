@@ -16,13 +16,13 @@ class SteamApi:
     __requests_cache = {}
 
     @staticmethod
-    def get_user_owned_apps(api_key: int, user_ids: list[int]) -> SteamUserData:
+    def get_user_owned_apps(api_keys: list[str], user_ids: list[int]) -> SteamUserData:
         """ Returns the users owned apps and any changes from the previous call as well as some game specific data returned by the same call """  
         game_data = {}
         user_data = []
         for user_id in user_ids:
             # Get changes between games lists
-            current_games = SteamApi.__get_user_owned_games(api_key, user_id)
+            current_games = SteamApi.__get_user_owned_games(api_keys, user_id)
             previous_games = SteamApi.__read_user_csv(user_id)
 
             current_ids = {game_id for game_id in current_games}
@@ -41,8 +41,8 @@ class SteamApi:
                     date_first_seen=row[SteamApi.__CSV_HEADER_DATE_FIRST_SEEN],
                     date_last_seen=row[SteamApi.__CSV_HEADER_DATE_LAST_SEEN],
                     date_last_removed=row[SteamApi.__CSV_HEADER_DATE_LAST_REMOVED],
-                    playtime=current_games[appid]["playtime"] if appid in current_games else 0,
-                    time_last_played=current_games[appid]["time_last_played"] if appid in current_games else 0
+                    playtime=current_games[appid]["playtime"] if appid in current_games else None,
+                    time_last_played=current_games[appid]["time_last_played"] if appid in current_games else None
                 )
                 # Write app data
                 if appid not in game_data:
@@ -79,7 +79,7 @@ class SteamApi:
         params = {
             "appids": app_id,
         }
-        response = SteamApi.__cached_get_json(SteamApi.__API_GET_APP_DETAILS, params=params, timeout=10)
+        response = SteamApi.cached_get(SteamApi.__API_GET_APP_DETAILS, params=params, timeout=10)
         response.raise_for_status() # TODO Is this lethal? also check for success false in response?
         data = response.json()
         return data[str(app_id)]["data"]
@@ -90,7 +90,7 @@ class SteamApi:
             "key": api_key,
             "steamids": ",".join(map(str, user_ids)),
         }
-        response = SteamApi.__cached_get_json(SteamApi.__API_GET_USERS, params=params, timeout=10)
+        response = SteamApi.cached_get(SteamApi.__API_GET_USERS, params=params, timeout=10)
         response.raise_for_status() # TODO Is this lethal? also check for success false in response?
         data = response.json()
 
@@ -101,7 +101,7 @@ class SteamApi:
         return user_info_map
     
     @staticmethod
-    def __cached_get_json(url: str, params: dict | None = None, **kwargs) -> Response:
+    def cached_get(url: str, params: dict | None = None, **kwargs) -> Response:
         params = params or {}
         key = (url, frozenset(params.items()))
 
@@ -113,28 +113,53 @@ class SteamApi:
         return response
 
     @staticmethod
-    def __get_user_owned_games(api_key: str, user_id: int) -> list[dict]:
-        params = {
-            "key": api_key,
-            "steamid": user_id,
-            "include_appinfo": "true",
-            "format": "json"
-        }
-        response = SteamApi.__cached_get_json(SteamApi.__API_GET_OWNED_GAMES, params=params, timeout=10)
-        response.raise_for_status() # TODO Is this lethal? also check for success false in response?
-        data = response.json()
-        
-        games = {
-            game["appid"]: {
-                "playtime": game.get("playtime_forever", 0),
-                "time_last_played": game.get("rtime_last_played", 0),
-                "icon_hash": game.get("img_icon_url", None),
-            }
-            for game in 
-            data.get("response", {}).get("games", []) or []
-        }
+    def __get_user_owned_games(api_keys: list[str], user_id: int) -> dict:
+        """ Will make a call with each api_key and only return common apps that were found """
+        results = []
 
-        return games
+        for api_key in api_keys:
+            params = {
+                "key": api_key,
+                "steamid": user_id,
+                "include_appinfo": "true",
+                "format": "json"
+            }
+
+            response = SteamApi.cached_get(
+                SteamApi.__API_GET_OWNED_GAMES,
+                params=params,
+                timeout=10
+            )
+
+            response.raise_for_status()
+
+            data = response.json()
+
+            games = {
+                game["appid"]: {
+                    "playtime": game.get("playtime_forever", 0),
+                    "time_last_played": game.get("rtime_last_played", 0),
+                    "icon_hash": game.get("img_icon_url"),
+                }
+                for game in data.get("response", {}).get("games", []) or []
+            }
+
+            results.append(games)
+
+        if not results:
+            return {}
+
+        # Get app ids shared by all API key results
+        common_app_ids = set(results[0].keys())
+
+        for games in results[1:]:
+            common_app_ids &= set(games.keys())
+
+        # Return as dict
+        return {
+            appid: results[0][appid]
+            for appid in common_app_ids
+        }
 
     @staticmethod
     def __read_user_csv(user_id: int) -> list[dict]:
