@@ -1,5 +1,5 @@
 from steamApi import SteamApi, SteamUserData
-from WebhookPublisher import WebhookPublisher
+from webhookPublisher import WebhookPublisher
 from pathlib import Path
 from traceback import print_exc
 from config import *
