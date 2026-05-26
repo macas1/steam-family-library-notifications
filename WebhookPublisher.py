@@ -154,7 +154,7 @@ class WebhookPublisher:
         added = len(data.added_by)
         removed = len(data.removed_by)
         owned = len(data.owned_by)
-        copies = owned + added - removed
+        copies = owned + added
 
         one_change = added + removed == 1
         new_game = owned == 0 and copies > 0
