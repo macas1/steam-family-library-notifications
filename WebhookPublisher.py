@@ -76,7 +76,7 @@ class WebhookPublisher:
             # Add to output
             output.append(AppEmbeddableInfo(
                 name=app_web_data["name"],
-                icon_url=WebhookPublisher.__get_icon_url(app_id, user_data.app_data[app_id]),
+                icon_url=WebhookPublisher.__get_icon_url(app_id, user_data.app_data[app_id], cli_data_results[app_id]),
                 banner_url=app_web_data["header_image"],
                 store_url=f"https://store.steampowered.com/app/{app_id}",
                 added_by=WebhookPublisher.__user_id_list_to_names(app["added"], user_info),
@@ -87,12 +87,14 @@ class WebhookPublisher:
         return output
     
     @staticmethod
-    def __get_icon_url(app_id: int, app_data: SteamAppData) -> str | None:
+    def __get_icon_url(app_id: int, app_data: SteamAppData, cli_data: dict) -> str | None:
         # Try icon hash
         if app_data.icon_hash:
             return f"http://media.steampowered.com/steamcommunity/public/images/apps/{app_id}/{app_data.icon_hash}.jpg"
 
-        # Todo: try steam.client data
+        # Try steam.client data
+        if cli_data["common"] and cli_data["common"]["icon"]:
+            return f"http://media.steampowered.com/steamcommunity/public/images/apps/{app_id}/{cli_data["common"]["icon"]}.jpg"
 
         # Return None found
         return None
