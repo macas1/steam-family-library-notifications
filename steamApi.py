@@ -80,7 +80,7 @@ class SteamApi:
             "appids": app_id,
         }
         response = SteamApi.__cached_get(SteamApi.__API_GET_APP_DETAILS, params=params, timeout=10)
-        response.raise_for_status() # TODO Is this lethal? also check for success false in response?
+        response.raise_for_status()
         data = response.json()
         return data[str(app_id)]["data"]
     
@@ -91,7 +91,7 @@ class SteamApi:
             "steamids": ",".join(map(str, user_ids)),
         }
         response = SteamApi.__cached_get(SteamApi.__API_GET_USERS, params=params, timeout=10)
-        response.raise_for_status() # TODO Is this lethal? also check for success false in response?
+        response.raise_for_status()
         data = response.json()
 
         # Convert to map

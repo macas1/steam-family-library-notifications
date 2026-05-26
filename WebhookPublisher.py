@@ -182,19 +182,21 @@ class WebhookPublisher:
     def __generate_embed_color(data: AppEmbeddableInfo) -> int:
         # Try get color from icon
         if data.icon_url:
-            return WebhookPublisher.__generate_color_from_image(data.icon_url)
+            color = WebhookPublisher.__generate_color_from_image(data.icon_url)
+            if color != None: return color
 
         # Try get color from banner
         if data.banner_url:
-            return WebhookPublisher.__generate_color_from_image(data.banner_url)
+            color = WebhookPublisher.__generate_color_from_image(data.banner_url)
+            if color != None: return color
         
         # Return black as default
         return 0
     
     @staticmethod
-    def __generate_color_from_image(image_url: str) -> int:
-        response = requests.get(image_url) # TODO: Should this be a normal get?
-        response.raise_for_status() # TODO: Make non lethal, this app must stay alive
+    def __generate_color_from_image(image_url: str) -> int | None:
+        response = requests.get(image_url)
+        if not response.ok: return None
 
         # Create ColorThief object from bytes
         color_thief = ColorThief(BytesIO(response.content))
