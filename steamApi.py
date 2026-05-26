@@ -79,7 +79,7 @@ class SteamApi:
         params = {
             "appids": app_id,
         }
-        response = SteamApi.cached_get(SteamApi.__API_GET_APP_DETAILS, params=params, timeout=10)
+        response = SteamApi.__cached_get(SteamApi.__API_GET_APP_DETAILS, params=params, timeout=10)
         response.raise_for_status() # TODO Is this lethal? also check for success false in response?
         data = response.json()
         return data[str(app_id)]["data"]
@@ -90,7 +90,7 @@ class SteamApi:
             "key": api_key,
             "steamids": ",".join(map(str, user_ids)),
         }
-        response = SteamApi.cached_get(SteamApi.__API_GET_USERS, params=params, timeout=10)
+        response = SteamApi.__cached_get(SteamApi.__API_GET_USERS, params=params, timeout=10)
         response.raise_for_status() # TODO Is this lethal? also check for success false in response?
         data = response.json()
 
@@ -101,7 +101,7 @@ class SteamApi:
         return user_info_map
     
     @staticmethod
-    def cached_get(url: str, params: dict | None = None, **kwargs) -> Response:
+    def __cached_get(url: str, params: dict | None = None, **kwargs) -> Response:
         params = params or {}
         key = (url, frozenset(params.items()))
 
@@ -125,7 +125,7 @@ class SteamApi:
                 "format": "json"
             }
 
-            response = SteamApi.cached_get(
+            response = SteamApi.__cached_get(
                 SteamApi.__API_GET_OWNED_GAMES,
                 params=params,
                 timeout=10

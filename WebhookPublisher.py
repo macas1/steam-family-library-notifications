@@ -1,9 +1,8 @@
-import colorsys
+import requests, colorsys
 from structs import AppEmbeddableInfo, SteamUserData, SteamAppData
 from steamApi import SteamApi
 from colorthief import ColorThief
 from io import BytesIO
-from requests import post as request_post
 
 class WebhookPublisher:    
     __MAX_EMBEDS = 10
@@ -19,7 +18,7 @@ class WebhookPublisher:
             payload = { "embeds": chunk_embeds }
             if i == 0: payload["content"] = WebhookPublisher.__generate_content(display_data)
             
-            response = request_post(webhook_url, json=payload)
+            response = requests.post(webhook_url, json=payload)
             if response.status_code in (200, 204):
                 print("Info: Webhook sent successfully.")
             else:
@@ -189,12 +188,12 @@ class WebhookPublisher:
         if data.banner_url:
             return WebhookPublisher.__generate_color_from_image(data.banner_url)
         
-        # Return black as default TODO: do something else?
+        # Return black as default
         return 0
     
     @staticmethod
     def __generate_color_from_image(image_url: str) -> int:
-        response = SteamApi.cached_get(image_url) # TODO: Should this be a normal get?
+        response = requests.get(image_url) # TODO: Should this be a normal get?
         response.raise_for_status() # TODO: Make non lethal, this app must stay alive
 
         # Create ColorThief object from bytes
