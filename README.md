@@ -9,7 +9,7 @@ It does this with no web scraping and without requiring Steam login credentials 
 ## 📥 Installation
 
 ### 1. Requirements
-- Python 3.10+
+- Python 3.12+
 - Steam Web API key
 
 ---
