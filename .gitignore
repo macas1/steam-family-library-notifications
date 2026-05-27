@@ -1,4 +1,7 @@
 __pycache__
 
+.python-version
+venv/
+
 user_data/*
 !user_data/.gitkeep
