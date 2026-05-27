@@ -12,9 +12,13 @@ class SteamApi:
     __CSV_HEADER_DATE_FIRST_SEEN = "date_first_seen"
     __CSV_HEADER_DATE_LAST_SEEN = "date_last_seen"
     __CSV_HEADER_DATE_LAST_REMOVED = "date_last_removed"
+    __CLI_APP_DETAILS_CHUNK_SIZE = 100
 
     __requests_cache = {}
+    __cli_app_details_cache = {}
 
+    steamClient = None
+    
     @staticmethod
     def get_user_owned_apps(api_keys: list[str], user_ids: list[int]) -> SteamUserData:
         """ Returns the users owned apps and any changes from the previous call as well as some game specific data returned by the same call """  
@@ -69,10 +73,35 @@ class SteamApi:
     
     @staticmethod
     def get_app_details_cli(app_ids: list[int]) -> dict:
-        client = SteamClient()
-        client.anonymous_login()
-        app_info = client.get_product_info(apps=app_ids)["apps"]
-        return app_info
+        # Get client
+        if not SteamApi.steamClient:
+            SteamApi.steamClient = SteamClient()
+            SteamApi.steamClient.anonymous_login()
+
+        # Get from cache
+        app_ids_missing = []
+        result = {}
+        for app_id in app_ids:
+            if app_id in SteamApi.__cli_app_details_cache:
+                result[app_id] = SteamApi.__cli_app_details_cache[app_id]
+            else:
+                app_ids_missing.append(app_id)
+
+        # Get from call
+        if app_ids_missing:
+            for i in range(0, len(app_ids_missing), SteamApi.__CLI_APP_DETAILS_CHUNK_SIZE):
+                chunk = app_ids_missing[i:i + SteamApi.__CLI_APP_DETAILS_CHUNK_SIZE]
+                apps_info = SteamApi.steamClient.get_product_info(apps=chunk).get("apps", {})
+                for app_id, app_info in apps_info.items():
+                    SteamApi.__cli_app_details_cache[app_id] = app_info
+                    result[app_id] = app_info
+
+        return result
+
+    @staticmethod
+    def __is_app_family_shared(app_id: int) -> bool:
+        app_cli_data = SteamApi.get_app_details_cli([app_id])[app_id]
+        return int(app_cli_data.get("common", {}).get("exfgls", 0)) == 0
     
     @staticmethod
     def get_app_details_web(app_id: int):
@@ -155,11 +184,15 @@ class SteamApi:
         for games in results[1:]:
             common_app_ids &= set(games.keys())
 
-        # Return as dict
+        # Make bulk cli app details call if needed. Cache will be used in __is_app_family_shared
+        SteamApi.get_app_details_cli(common_app_ids)
+
+        # Return as dict while filtering out non family shared apps
         return {
-            appid: results[0][appid]
-            for appid in common_app_ids
-        }
+            app_id: results[0][app_id]
+            for app_id in common_app_ids
+            if SteamApi.__is_app_family_shared(app_id)
+        }         
 
     @staticmethod
     def __read_user_csv(user_id: int) -> list[dict]:

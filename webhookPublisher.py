@@ -43,14 +43,6 @@ class WebhookPublisher:
 
         # Get cli results for apps in bulk
         cli_data_results = SteamApi.get_app_details_cli([app_id for app_id in app_data])
-
-        # If family shared exclusive, or not public game (expired play-tests) ignore
-        for app_id in list(app_data.keys()):
-            app_cli_data = cli_data_results[app_id]
-            if app_cli_data.get("_missing_token") or int(app_cli_data["common"].get("exfgls", 0)) > 0:
-                del app_data[app_id]
-        if not app_data:
-            return {}
         
         # Get which users already own the app
         for app_id, app in app_data.items():
