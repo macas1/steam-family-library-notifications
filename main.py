@@ -1,7 +1,7 @@
 from steamApi import SteamApi, SteamUserData
 from webhookPublisher import WebhookPublisher
 from pathlib import Path
-from traceback import print_exc
+from traceback import print_exception
 from config import *
 
 def main():
@@ -24,7 +24,7 @@ def main():
             )
         except Exception as e:
             print("Error: DISCORD_WEBHOOKS[{index}] failed to get user apps")
-            print_exc(e)
+            print_exception(e)
             continue
 
         # Optionally skip publishing
@@ -54,7 +54,7 @@ def main():
             WebhookPublisher.publish_update(hook.webhook_url, hook.steam_web_api_key, user_data)   
         except Exception as e:
             print("Error: DISCORD_WEBHOOKS[{index}] failed to format and publish data")
-            print_exc(e)
+            print_exception(e)
             continue
 
 def all_filenames_exist(directory: str, filenames: list[str]) -> bool:

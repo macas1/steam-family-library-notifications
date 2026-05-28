@@ -13,6 +13,7 @@ class SteamApi:
     __CSV_HEADER_DATE_LAST_SEEN = "date_last_seen"
     __CSV_HEADER_DATE_LAST_REMOVED = "date_last_removed"
     __CLI_APP_DETAILS_CHUNK_SIZE = 100
+    __REQUEST_TIMEOUT = 60
 
     __requests_cache = {}
     __cli_app_details_cache = {}
@@ -108,7 +109,7 @@ class SteamApi:
         params = {
             "appids": app_id,
         }
-        response = SteamApi.__cached_get(SteamApi.__API_GET_APP_DETAILS, params=params, timeout=10)
+        response = SteamApi.__cached_get(SteamApi.__API_GET_APP_DETAILS, params=params, timeout=SteamApi.__REQUEST_TIMEOUT)
         response.raise_for_status()
         data = response.json()
         return data[str(app_id)]["data"]
@@ -119,7 +120,7 @@ class SteamApi:
             "key": api_key,
             "steamids": ",".join(map(str, user_ids)),
         }
-        response = SteamApi.__cached_get(SteamApi.__API_GET_USERS, params=params, timeout=10)
+        response = SteamApi.__cached_get(SteamApi.__API_GET_USERS, params=params, timeout=SteamApi.__REQUEST_TIMEOUT)
         response.raise_for_status()
         data = response.json()
 
@@ -158,7 +159,7 @@ class SteamApi:
             response = SteamApi.__cached_get(
                 SteamApi.__API_GET_OWNED_GAMES,
                 params=params,
-                timeout=10
+                timeout=SteamApi.__REQUEST_TIMEOUT
             )
 
             response.raise_for_status()
