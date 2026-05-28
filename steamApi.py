@@ -151,6 +151,7 @@ class SteamApi:
                 "key": api_key,
                 "steamid": user_id,
                 "include_appinfo": "true",
+                "skip_unvetted_apps": "false",
                 "format": "json"
             }
 
@@ -184,7 +185,7 @@ class SteamApi:
         for games in results[1:]:
             common_app_ids &= set(games.keys())
 
-        # Make bulk cli app details call if needed. Cache will be used in __is_app_family_shared
+        # Make bulk cli app details call if needed. The resulting cache will be used in __is_app_family_shared
         SteamApi.get_app_details_cli(common_app_ids)
 
         # Return as dict while filtering out non family shared apps

@@ -91,7 +91,6 @@ class WebhookPublisher:
         # Return None found
         return None
     
-    
     @staticmethod
     def __user_id_list_to_names(ids: list[int], user_info: dict) -> list[str]:
         output = []
