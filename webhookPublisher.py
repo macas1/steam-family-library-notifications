@@ -101,7 +101,7 @@ class WebhookPublisher:
     @staticmethod
     def __generate_content(data: list[AppEmbeddableInfo]):
         changes = len(data)
-        return f"⠀\nThe Steam family library has had {changes} change{"s" if changes > 1 else ""} today!"
+        return f"The Steam family library has had {changes} change{"s" if changes > 1 else ""} today!"
     
     @staticmethod
     def __generate_embeds(data: list[AppEmbeddableInfo]):
