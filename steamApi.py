@@ -33,16 +33,16 @@ class SteamApi:
 
             # Get changes between games lists
             current_games = SteamApi.__get_user_owned_games(api_keys, user_id)
-            previous_games = SteamApi.__read_user_csv(user_id)
+            previous_games_csv = SteamApi.__read_user_csv(user_id)
 
             current_ids = {game_id for game_id in current_games}
-            previous_ids = {row[SteamApi.__CSV_HEADER_ID] for row in previous_games if not row[SteamApi.__CSV_HEADER_DATE_LAST_REMOVED]}
+            previous_ids = {row[SteamApi.__CSV_HEADER_ID] for row in previous_games_csv if not row[SteamApi.__CSV_HEADER_DATE_LAST_REMOVED]}
 
             added_ids = current_ids - previous_ids
             removed_ids = previous_ids - current_ids
 
-            # Write updated games list and get new data
-            new_app_data = SteamApi.__create_updated_user_csv_data(user_id, previous_games, added_ids, removed_ids)
+            # Get new csv data from old data and current games
+            new_app_data = SteamApi.__create_updated_user_csv_data(previous_games_csv, added_ids, removed_ids)
             
             # Group relevant data from above sources
             steam_user_apps = {}
@@ -276,7 +276,7 @@ class SteamApi:
         return games_data
 
     @staticmethod
-    def __create_updated_user_csv_data(user_id: int, old_csv_data: list[dict], new_ids: set, removed_ids: set) -> list[dict]:
+    def __create_updated_user_csv_data(old_csv_data: list[dict], new_ids: set, removed_ids: set) -> list[dict]:
         """ Writes user game data to record what has been observed. Returns new observation data. """
         today = date.today().isoformat()
 

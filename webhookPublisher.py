@@ -9,7 +9,7 @@ class WebhookPublisher:
     __MAX_EMBEDS = 10
 
     @staticmethod
-    def publish_update(webhook_url: str, steam_web_api_key: str, user_data: SteamUserData) -> None:
+    def publish_update(webhook_url: str, steam_web_api_key: str, user_data: SteamUserData) -> bool:
         display_data = WebhookPublisher.__get_info_from_users(steam_web_api_key, user_data)
         embeds = WebhookPublisher.__generate_embeds(display_data)
 
@@ -20,12 +20,13 @@ class WebhookPublisher:
             if i == 0: payload["content"] = WebhookPublisher.__generate_content(display_data)
             
             response = requests.post(webhook_url, json=payload)
-            success = response.status_code in (200, 204)
-            if success:
+            
+            if response.status_code in (200, 204):
                 print("Info: Webhook sent successfully.")
             else:
                 print(f"Warning: Webhook failed: {response.status_code}\n{response.text}")
-            return success
+                return False
+        return True
         
     @staticmethod
     def __get_info_from_users(steam_web_api_key: str, user_data: SteamUserData) -> list[AppEmbeddableInfo]:
