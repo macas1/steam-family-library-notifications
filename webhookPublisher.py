@@ -5,6 +5,7 @@ from colorthief import ColorThief
 from io import BytesIO
 
 class WebhookPublisher:    
+    """Static class for publishing SteamUserData via a discord webhook"""
     __MAX_EMBEDS = 10
 
     @staticmethod
@@ -19,10 +20,12 @@ class WebhookPublisher:
             if i == 0: payload["content"] = WebhookPublisher.__generate_content(display_data)
             
             response = requests.post(webhook_url, json=payload)
-            if response.status_code in (200, 204):
+            success = response.status_code in (200, 204)
+            if success:
                 print("Info: Webhook sent successfully.")
             else:
                 print(f"Warning: Webhook failed: {response.status_code}\n{response.text}")
+            return success
         
     @staticmethod
     def __get_info_from_users(steam_web_api_key: str, user_data: SteamUserData) -> list[AppEmbeddableInfo]:

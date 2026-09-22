@@ -5,7 +5,7 @@ from structs import DiscordWebhook
 DISCORD_WEBHOOKS = [
     DiscordWebhook(
         steam_web_api_key=os.environ.get("SteamWebApiKeyUser1"),
-        steam_web_api_key_2=os.environ.get("SteamWebApiKeyUser2"), #Optional
+        steam_web_api_key_2=os.environ.get("SteamWebApiKeyUser2"), # Optional
         webhook_url="",
         user_ids=[]
     )

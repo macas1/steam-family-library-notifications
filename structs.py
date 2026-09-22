@@ -1,5 +1,6 @@
 
 from pydantic import BaseModel
+from enum import StrEnum
 
 class DiscordWebhook(BaseModel):
     steam_web_api_key: str
@@ -44,3 +45,8 @@ class AppEmbeddableInfo(BaseModel):
     added_by: list[str]     
     removed_by: list[str]
     owned_by: list[str]
+
+class PublishState(StrEnum):
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
+    SKIPPED = "SKIPPED"

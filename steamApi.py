@@ -2,9 +2,12 @@ import csv, os
 from datetime import date
 from structs import SteamUserAppData, SteamAppData, SteamUserApps, SteamUserData, SteamUser
 from steam.client import SteamClient
+from steam.enums import EResult
 from requests import Response, get as get_request
 
 class SteamApi:
+    """Static utility class for interacting with the Steam API."""
+
     __API_GET_OWNED_GAMES = "https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/"
     __API_GET_APP_DETAILS = "https://store.steampowered.com/api/appdetails"
     __API_GET_USERS = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002"
@@ -37,11 +40,12 @@ class SteamApi:
             removed_ids = previous_ids - current_ids
 
             # Write updated games list and get new data
-            new_app_data = SteamApi.__write_user_csv(user_id, previous_games, added_ids, removed_ids)
+            new_app_data = SteamApi.__create_updated_user_csv_data(user_id, previous_games, added_ids, removed_ids)
             
+            # Group relevant data from above sources
             steam_user_apps = {}
             for appid, row in new_app_data.items():
-                # Write user data:
+                # User data
                 steam_user_apps[appid] = SteamUserAppData(
                     date_first_seen=row[SteamApi.__CSV_HEADER_DATE_FIRST_SEEN],
                     date_last_seen=row[SteamApi.__CSV_HEADER_DATE_LAST_SEEN],
@@ -49,12 +53,13 @@ class SteamApi:
                     playtime=current_games[appid]["playtime"] if appid in current_games else None,
                     time_last_played=current_games[appid]["time_last_played"] if appid in current_games else None
                 )
-                # Write app data
+                # App data
                 if appid not in game_data:
                     game_data[appid] = SteamAppData(
                         icon_hash=current_games[appid]["icon_hash"] if appid in current_games else None
                     )
 
+            # Store relevant user and user app data
             user_game_data = SteamUserApps(
                 apps=steam_user_apps,
                 added_app_ids=added_ids,
@@ -73,11 +78,42 @@ class SteamApi:
         )
     
     @staticmethod
+    def update_stored_user_data(user_data: SteamUserData) -> None:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+
+        for user in user_data.steam_users:
+            file_path = os.path.join(
+                script_dir,
+                "user_data",
+                f"{user.steam_id}.csv"
+            )
+
+            with open(file_path, "w", newline="", encoding="utf-8") as f:
+                # Create write and write headers
+                writer = csv.DictWriter(
+                    f,
+                    fieldnames=[
+                        SteamApi.__CSV_HEADER_ID,
+                        SteamApi.__CSV_HEADER_DATE_FIRST_SEEN,
+                        SteamApi.__CSV_HEADER_DATE_LAST_SEEN,
+                        SteamApi.__CSV_HEADER_DATE_LAST_REMOVED
+                    ]
+                )
+                writer.writeheader()
+
+                # Reconstruct csv rows for this user and write them
+                for appid, app_data in user.game_data.apps.items():
+                    writer.writerow({
+                        SteamApi.__CSV_HEADER_ID: appid,
+                        SteamApi.__CSV_HEADER_DATE_FIRST_SEEN: app_data.date_first_seen,
+                        SteamApi.__CSV_HEADER_DATE_LAST_SEEN: app_data.date_last_seen,
+                        SteamApi.__CSV_HEADER_DATE_LAST_REMOVED: app_data.date_last_removed
+                    })
+
+    @staticmethod
     def get_app_details_cli(app_ids: list[int]) -> dict:
-        # Get client
-        if not SteamApi.steamClient:
-            SteamApi.steamClient = SteamClient()
-            SteamApi.steamClient.anonymous_login()
+        # Init SteamClient
+        SteamApi.__init_steam_client()
 
         # Get from cache
         app_ids_missing = []
@@ -98,6 +134,15 @@ class SteamApi:
                     result[app_id] = app_info
 
         return result
+    
+    @staticmethod
+    def __init_steam_client() -> None:
+        if not SteamApi.steamClient:
+            steamClient = SteamClient()
+            result = steamClient.anonymous_login()
+            if result != EResult.OK:
+                raise RuntimeError(f"Steam anonymous login failed: {result}")
+            SteamApi.steamClient = steamClient
 
     @staticmethod
     def __is_app_family_shared(app_id: int) -> bool:
@@ -148,6 +193,7 @@ class SteamApi:
         results = []
 
         for api_key in api_keys:
+            # Make api call
             params = {
                 "key": api_key,
                 "steamid": user_id,
@@ -155,26 +201,27 @@ class SteamApi:
                 "skip_unvetted_apps": "false",
                 "format": "json"
             }
-
             response = SteamApi.__cached_get(
                 SteamApi.__API_GET_OWNED_GAMES,
                 params=params,
                 timeout=SteamApi.__REQUEST_TIMEOUT
             )
 
+            # Validate Response
             response.raise_for_status()
+            response_data = response.json().get("response")
+            if response_data is None:
+                raise RuntimeError("Steam GetOwnedGames response is missing 'response'")
 
-            data = response.json()
-
+            # Store result
             games = {
                 game["appid"]: {
                     "playtime": game.get("playtime_forever", 0),
                     "time_last_played": game.get("rtime_last_played", 0),
                     "icon_hash": game.get("img_icon_url"),
                 }
-                for game in data.get("response", {}).get("games", []) or []
+                for game in response_data.get("games", []) or []
             }
-
             results.append(games)
 
         if not results:
@@ -227,7 +274,7 @@ class SteamApi:
         return games_data
 
     @staticmethod
-    def __write_user_csv(user_id: int, old_csv_data: list[dict], new_ids: set, removed_ids: set) -> list[dict]:
+    def __create_updated_user_csv_data(user_id: int, old_csv_data: list[dict], new_ids: set, removed_ids: set) -> list[dict]:
         """ Writes user game data to record what has been observed. Returns new observation data. """
         today = date.today().isoformat()
 
@@ -253,22 +300,5 @@ class SteamApi:
                     SteamApi.__CSV_HEADER_DATE_LAST_SEEN: today,
                     SteamApi.__CSV_HEADER_DATE_LAST_REMOVED: ""
                 }
-
-        # Write data
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        file_path = os.path.join(script_dir, "user_data", f"{user_id}.csv")
-        with open(file_path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(
-                f,
-                fieldnames=[
-                    SteamApi.__CSV_HEADER_ID,
-                    SteamApi.__CSV_HEADER_DATE_FIRST_SEEN,
-                    SteamApi.__CSV_HEADER_DATE_LAST_SEEN,
-                    SteamApi.__CSV_HEADER_DATE_LAST_REMOVED
-                ]
-            )
-
-            writer.writeheader()
-            writer.writerows(rows.values())
 
         return rows
