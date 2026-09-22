@@ -29,6 +29,8 @@ class SteamApi:
         game_data = {}
         user_data = []
         for user_id in user_ids:
+            print(f"Info: Processing user {user_id}")
+
             # Get changes between games lists
             current_games = SteamApi.__get_user_owned_games(api_keys, user_id)
             previous_games = SteamApi.__read_user_csv(user_id)
